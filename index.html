@@ -3,102 +3,337 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>To-Do List</title>
+    <title>Professional Task Manager</title>
     <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --danger: #e74c3c;
+            --background: #f8f9fa;
+            --text: #2c3e50;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--background);
+            color: var(--text);
+            margin: 0;
+            padding: 2rem;
         }
-        #todoList {
-            border-collapse: collapse;
-            width: 70%;
+
+        .container {
+            max-width: 800px;
             margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
         }
-        #todoList th, #todoList td {
-            border: 1px solid #ddd;
-            padding: 8px;
+
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            margin: 0 0 2rem;
+            font-weight: 600;
+            font-size: 2.2rem;
+        }
+
+        .todo-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+
+        .todo-table th,
+        .todo-table td {
+            padding: 1rem;
             text-align: left;
+            border-bottom: 1px solid #eee;
         }
-        #todoList th {
-            background-color: #f0f0f0;
+
+        .todo-table th {
+            background: var(--primary);
+            color: white;
+            font-weight: 500;
+            letter-spacing: 0.5px;
         }
-        #todoList th:first-child, #todoList th:last-child {
-            width: 5%;
+
+        .todo-table tr {
+            transition: all 0.3s ease;
         }
-        #todoList th:nth-child(2) {
-            width: 90%;
+
+        .todo-table tr.removing {
+            transform: translateX(100%);
+            opacity: 0;
         }
+
         .add-form {
-            margin-top: 20px;
-            width: 70%;
-            margin: 20px auto;
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
         }
-        .add-form input[type="text"] {
-            padding: 8px;
-            width: 70%;
+
+        .input-field {
+            flex: 1;
+            padding: 0.9rem 1.4rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
         }
-        .add-form button {
-            padding: 8px;
-            width: 20%;
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        .btn {
+            padding: 0.9rem 1.6rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .btn-primary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+            transform: scale(1.02);
+        }
+
+        .edit-container {
+            position: relative;
+            padding: 0.8rem;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .edit-input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .edit-buttons {
+            display: flex;
+            gap: 0.8rem;
+            justify-content: flex-end;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .container {
+                padding: 1.5rem;
+            }
+            
+            .add-form {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="container">
+        <h1>Task Manager Pro</h1>
+        
+        <div class="add-form">
+            <input type="text" id="newItem" class="input-field" placeholder="Enter task description..." autocomplete="off">
+            <button id="addButton" class="btn btn-primary">
+                <span>➕</span> Add Task
+            </button>
+        </div>
 
-<h2 style="text-align: center;">To-Do List</h2>
+        <table class="todo-table">
+            <thead>
+                <tr>
+                    <th>№</th>
+                    <th>Task</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="listBody">
+                {{rows}}
+            </tbody>
+        </table>
+    </div>
 
-<table id="todoList">
-    <thead>
-        <tr>
-            <th>Number</th>
-            <th>Text</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-    <tbody id="listBody">
-        {{rows}}
-    </tbody>
-</table>
+    <script>
+        // Добавление задачи
+        document.getElementById('addButton').addEventListener('click', async () => {
+            const input = document.getElementById('newItem');
+            const text = input.value.trim();
+            
+            if (!text) return;
 
-<div class="add-form">
-    <input type="text" id="newItem" placeholder="Enter new item">
-    <button onclick="addItem()">Add</button>
-</div>
-
-<script>
-    let items = [];
-    let nextId = 1;
-
-    function renderList() {
-        const listBody = document.getElementById('listBody');
-        listBody.innerHTML = '';
-
-        items.forEach((item, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${item.text}</td>
-                <td><button onclick="removeItem(${index})">Remove</button></td>
-            `;
-            listBody.appendChild(row);
+            try {
+                const response = await fetch('/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                
+                if (response.ok) {
+                    const newItem = await response.json();
+                    const tbody = document.getElementById('listBody');
+                    
+                    const newRow = document.createElement('tr');
+                    newRow.dataset.id = newItem.id;
+                    newRow.innerHTML = `
+                        <td>${tbody.children.length + 1}</td>
+                        <td>${newItem.text}</td>
+                        <td><button class="btn btn-danger">🗑️ Delete</button></td>
+                    `;
+                    
+                    tbody.appendChild(newRow);
+                    input.value = '';
+                    updateRowNumbers();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to add task');
+            }
         });
-    }
 
-    function addItem() {
-        const newItemInput = document.getElementById('newItem');
-        const newItemText = newItemInput.value.trim();
+        // Удаление задачи
+        document.addEventListener('click', async (e) => {
+            const deleteBtn = e.target.closest('.btn-danger');
+            if (!deleteBtn) return;
 
-        if (newItemText) {
-            items.push({ id: nextId++, text: newItemText });
-            newItemInput.value = '';
-            renderList();
+            const row = deleteBtn.closest('tr');
+            const id = row.dataset.id;
+            
+            try {
+                const response = await fetch('/delete', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+
+                if (response.ok) {
+                    row.classList.add('removing');
+                    setTimeout(() => row.remove(), 300);
+                    updateRowNumbers();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to delete task');
+            }
+        });
+
+        // Обновление номеров
+        function updateRowNumbers() {
+            document.querySelectorAll('#listBody tr').forEach((row, index) => {
+                row.querySelector('td:first-child').textContent = index + 1;
+            });
         }
-    }
 
-    function removeItem(index) {
-        items.splice(index, 1);
-        renderList();
-    }
-</script>
+        // Редактирование задачи
+        let isEditing = false;
+        document.addEventListener('dblclick', (e) => {
+            if (isEditing) {
+                alert('Please finish current editing first!');
+                return;
+            }
 
+            const target = e.target.closest('td:nth-child(2)');
+            if (!target) return;
+
+            isEditing = true;
+            const row = target.closest('tr');
+            const id = row.dataset.id;
+            const originalText = target.textContent;
+
+            const editHTML = `
+                <div class="edit-container">
+                    <input class="edit-input" value="${originalText}" autofocus>
+                    <div class="edit-buttons">
+                        <button class="btn btn-success save-btn">💾 Save</button>
+                        <button class="btn btn-danger cancel-btn">❌ Cancel</button>
+                    </div>
+                </div>
+            `;
+
+            target.innerHTML = editHTML;
+            const input = target.querySelector('.edit-input');
+            input.focus();
+            input.setSelectionRange(input.value.length, input.value.length);
+
+            const saveBtn = target.querySelector('.save-btn');
+            const cancelBtn = target.querySelector('.cancel-btn');
+
+            const saveChanges = async () => {
+                const newText = input.value.trim();
+                if (!newText || newText === originalText) {
+                    cancelChanges();
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/update', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id, newText })
+                    });
+
+                    if (!response.ok) throw new Error();
+                    target.textContent = newText;
+                    isEditing = false;
+                } catch (error) {
+                    alert('Failed to save changes');
+                    cancelChanges();
+                }
+            };
+
+            const cancelChanges = () => {
+                target.textContent = originalText;
+                isEditing = false;
+            };
+
+            saveBtn.addEventListener('click', saveChanges);
+            cancelBtn.addEventListener('click', cancelChanges);
+            
+            input.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') saveChanges();
+                if (e.key === 'Escape') cancelChanges();
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!target.contains(e.target)) {
+                    saveChanges();
+                }
+            });
+        });
+    </script>
 </body>
 </html>
