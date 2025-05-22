@@ -3,102 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>To-Do List</title>
+    <title>Professional Task Manager</title>
     <style>
+        :root {
+            --primary: #2c3e50;
+            --danger: #e74c3c;
+            --background: #f8f9fa;
+            --text: #2c3e50;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--background);
+            color: var(--text);
+            margin: 0;
+            padding: 2rem;
         }
-        #todoList {
-            border-collapse: collapse;
-            width: 70%;
+
+        .container {
+            max-width: 800px;
             margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
         }
-        #todoList th, #todoList td {
-            border: 1px solid #ddd;
-            padding: 8px;
+
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            margin: 0 0 2rem;
+            font-weight: 600;
+            font-size: 2.2rem;
+        }
+
+        .todo-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+
+        .todo-table th,
+        .todo-table td {
+            padding: 1rem;
             text-align: left;
+            border-bottom: 1px solid #eee;
         }
-        #todoList th {
-            background-color: #f0f0f0;
+
+        .todo-table th {
+            background: var(--primary);
+            color: white;
+            font-weight: 500;
+            letter-spacing: 0.5px;
         }
-        #todoList th:first-child, #todoList th:last-child {
-            width: 5%;
+
+        .todo-table tr {
+            transition: all 0.3s ease;
         }
-        #todoList th:nth-child(2) {
-            width: 90%;
+
+        .todo-table tr.removing {
+            transform: translateX(100%);
+            opacity: 0;
         }
-        .add-form {
-            margin-top: 20px;
-            width: 70%;
-            margin: 20px auto;
+
+        .btn {
+            padding: 0.9rem 1.6rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
         }
-        .add-form input[type="text"] {
-            padding: 8px;
-            width: 70%;
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
         }
-        .add-form button {
-            padding: 8px;
-            width: 20%;
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .container {
+                padding: 1.5rem;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="container">
+        <h1>Task Manager Pro</h1>
+        <table class="todo-table">
+            <thead>
+                <tr>
+                    <th>№</th>
+                    <th>Task</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="listBody">
+                {{rows}}
+            </tbody>
+        </table>
+    </div>
 
-<h2 style="text-align: center;">To-Do List</h2>
+    <script>
+        document.addEventListener('click', async (e) => {
+            const deleteBtn = e.target.closest('.btn-danger');
+            if (!deleteBtn) return;
 
-<table id="todoList">
-    <thead>
-        <tr>
-            <th>Number</th>
-            <th>Text</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-    <tbody id="listBody">
-        {{rows}}
-    </tbody>
-</table>
+            const row = deleteBtn.closest('tr');
+            const id = row.dataset.id;
+            
+            try {
+                const response = await fetch('/delete', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
 
-<div class="add-form">
-    <input type="text" id="newItem" placeholder="Enter new item">
-    <button onclick="addItem()">Add</button>
-</div>
-
-<script>
-    let items = [];
-    let nextId = 1;
-
-    function renderList() {
-        const listBody = document.getElementById('listBody');
-        listBody.innerHTML = '';
-
-        items.forEach((item, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${item.text}</td>
-                <td><button onclick="removeItem(${index})">Remove</button></td>
-            `;
-            listBody.appendChild(row);
+                if (response.ok) {
+                    row.classList.add('removing');
+                    setTimeout(() => row.remove(), 300);
+                    updateRowNumbers();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to delete task');
+            }
         });
-    }
 
-    function addItem() {
-        const newItemInput = document.getElementById('newItem');
-        const newItemText = newItemInput.value.trim();
-
-        if (newItemText) {
-            items.push({ id: nextId++, text: newItemText });
-            newItemInput.value = '';
-            renderList();
+        function updateRowNumbers() {
+            document.querySelectorAll('#listBody tr').forEach((row, index) => {
+                row.querySelector('td:first-child').textContent = index + 1;
+            });
         }
-    }
-
-    function removeItem(index) {
-        items.splice(index, 1);
-        renderList();
-    }
-</script>
-
+    </script>
 </body>
 </html>
